@@ -17,14 +17,15 @@ client = ollama.AsyncClient(OLLAMA_URL)
 with open(__file__, "r") as f:
     SOURCE_CODE = f.read()
 
+
 @cl.on_chat_start
 async def chat_start():
     cl.user_session.set("model", "qwen3:1.7b")
     cl.user_session.set("messages", [])
 
+
 @cl.on_message
 async def on_message(msg: cl.Message):
-
     if msg.content == "/source":
         response = f"```python\n{SOURCE_CODE}\n"
     elif msg.content == "/list":
@@ -39,7 +40,9 @@ async def on_message(msg: cl.Message):
             cl.user_session.set("model", args[1])
             response = f"Now using {args[1]}"
     else:
-        cl.user_session.get("messages").append(ollama.Message(role="user", content=msg.content))
+        cl.user_session.get("messages").append(
+            ollama.Message(role="user", content=msg.content)
+        )
         chat_response = await client.chat(
             model=cl.user_session.get("model"),
             messages=cl.user_session.get("messages"),
