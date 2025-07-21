@@ -1,10 +1,7 @@
 """A chainlit client application that uses Ollama to converse.
 
 To run this client, use `chainlit run path/to/this/app.py`.
-Ollama must be running and you must have "qwen3:1.7b" installed.
-
-Typing "/list" as your prompt will result in all available Ollama models being output.
-Typing "/setmodel MODEL_NAME" as your prompt will switch the current language model to MODEL_NAME.
+Ollama must be running and you must have "qwen3:4B" installed.
 """
 
 import mcp
@@ -14,7 +11,7 @@ from chainlit.mcp import McpConnection
 import json
 
 OLLAMA_URL = "localhost:11434"
-OLLAMA_MODEL = "qwen3:4B"#"llama3.2:3B"#
+OLLAMA_MODEL = "qwen3:4B"
 
 SYSTEM_PROMPT = """You are a helpful assistant with access to a Python Interpreter. The user will ask you questions and you will answer the question by
 * Deciding whether code would be useful for answer the user's question.
@@ -167,7 +164,7 @@ async def on_message(msg: cl.Message):
         tool_calls = response.message.tool_calls or await get_tool_calls_if_appropriate()
 
         if tool_calls:
-            tool_call = next(iter(response.message.tool_calls))
+            tool_call = next(iter(tool_calls))
             tool_result = await call_tool(tool_call)
             chat_messages.append({
                 "role": "tool",
