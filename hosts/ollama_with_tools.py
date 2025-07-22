@@ -15,12 +15,12 @@ import json
 OLLAMA_URL = "localhost:11434"
 OLLAMA_MODEL = "qwen3:4b"
 
-SYSTEM_PROMPT = """You are a helpful assistant with access to a Python Interpreter. The user will ask you questions and you will answer the question by
-* Deciding whether code would be useful for answer the user's question.
-* If so, write code for use by the interpreter
+SYSTEM_PROMPT = """You are a helpful assistant with access to tools. The user will ask you questions and you will
+* Decide whether each tool would be useful for answering the user's question;
+* If a tool is useful, compose a tool call;
+* After considering/using tools, write a response, including any results from the tool calls.
 
-After you get the result from the Python interpreter, relay the result to the user, explain the formula that you used in natural language, and clearly state the answer. Do NOT re-evaluate the problem or continue the thought process after obtaining the result.
-
+Also,
 * Do NOT call the same tool multiple times with the same arguments.
 * Do NOT forget to use the tool tags when calling a tool.
 * Do NOT double escape newlines when calling a tool. Simply use "\\n".
@@ -107,12 +107,12 @@ async def call_tool(tool_use: ollama.Message.ToolCall):
         )
         return current_step.output
 
-    try:
-        current_step.output = await mcp_session.call_tool(tool_name, tool_input)
-    except Exception as e:
-        current_step.output = json.dumps({"error": str(e)})
+    tool_result = await mcp_session.call_tool(tool_name, tool_input)
 
-    return current_step.output
+    if tool_result.isError:
+        return str(tool_result.content[0].text)
+
+    return str(tool_result.structuredContent)
 
 @cl.step(name="Generating Response")
 async def chat_ollama(chat_messages, think=True, silent=False):
