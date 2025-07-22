@@ -13,7 +13,7 @@ from chainlit.mcp import McpConnection
 import json
 
 OLLAMA_URL = "localhost:11434"
-OLLAMA_MODEL = "qwen3:4B"
+OLLAMA_MODEL = "qwen3:4b"
 
 SYSTEM_PROMPT = """You are a helpful assistant with access to a Python Interpreter. The user will ask you questions and you will answer the question by
 * Deciding whether code would be useful for answer the user's question.
@@ -22,6 +22,8 @@ SYSTEM_PROMPT = """You are a helpful assistant with access to a Python Interpret
 After you get the result from the Python interpreter, relay the result to the user, explain the formula that you used in natural language, and clearly state the answer. Do NOT re-evaluate the problem or continue the thought process after obtaining the result.
 
 * Do NOT call the same tool multiple times with the same arguments.
+* Do NOT forget to use the tool tags when calling a tool.
+* Do NOT double escape newlines when calling a tool. Simply use "\\n".
 * When the tool provides a result use it to answer the question, do not ignore the result.
 * When you say you will use a tool, use it before finishing your turn.
 """
@@ -56,7 +58,7 @@ async def on_mcp(connection: McpConnection, session: mcp.ClientSession):
 
 @cl.step(name="Checking for Tools", show_input=False)
 async def get_tool_calls_if_appropriate():
-    response = await chat_ollama(
+    response, _ = await chat_ollama(
         chat_messages=cl.user_session.get("chat_messages")
         + [
             {
@@ -112,8 +114,8 @@ async def call_tool(tool_use: ollama.Message.ToolCall):
 
     return current_step.output
 
-
-async def chat_ollama(chat_messages, think=None, silent=False):
+@cl.step(name="Generating Response")
+async def chat_ollama(chat_messages, think=True, silent=False):
     msg = cl.Message(content="")
     mcp_tools = cl.user_session.get("mcp_tools")
     tools = flatten([tools for _, tools in mcp_tools.items()])
@@ -123,20 +125,33 @@ async def chat_ollama(chat_messages, think=None, silent=False):
         tools=tools,
         model=OLLAMA_MODEL,
         stream=True,
-        think=think,
+        think=None if think else False,
     )
+    
+    if think:
+        with cl.Step(name="Thinking") as step:
+            async for chunk in stream:
+                if not silent:
+                    await step.stream_token(chunk.message.content)
 
+                if "</think>" in chunk.message.content:
+                    break
+
+    total_content = ""
     final_chunk = None
     async for chunk in stream:
+        partial_content = chunk.message.content
+        total_content += partial_content
+
         if not silent:
-            await msg.stream_token(chunk.message.content)
+            await msg.stream_token(partial_content)
         if not chunk.done:
             final_chunk = chunk
 
     if not silent:
         await msg.send()
 
-    return final_chunk
+    return final_chunk, total_content
 
 
 @cl.on_chat_start
@@ -163,11 +178,11 @@ async def on_message(msg: cl.Message):
     chat_messages.append({"role": "user", "content": msg.content})
 
     while True:
-        response = await chat_ollama(chat_messages, think=False)
+        response, full_content = await chat_ollama(chat_messages, think=False)
         if not response:
             break
 
-        chat_messages.append({"role": "assistant", "content": response.message.content})
+        chat_messages.append({"role": "assistant", "content": full_content})
 
         tool_calls = (
             response.message.tool_calls or await get_tool_calls_if_appropriate()
@@ -176,6 +191,12 @@ async def on_message(msg: cl.Message):
         if tool_calls:
             tool_call = next(iter(tool_calls))
             tool_result = await call_tool(tool_call)
+            chat_messages.append(
+                {
+                    "role": "tool_use",
+                    "content": tool_call.model_dump_json()
+                }
+            )
             chat_messages.append(
                 {
                     "role": "tool",
