@@ -1,6 +1,8 @@
-"""A chainlit client application that uses Ollama to converse.
+"""A chainlit host application that uses Ollama to converse.
+This is an MCP host that supports only tool calls.
+Resources, sampling, elicitation, etc are not supported.
 
-To run this client, use `chainlit run path/to/this/app.py`.
+To run this MCP host, use `chainlit run path/to/this/app.py`.
 Ollama must be running and you must have "qwen3:4B" installed.
 """
 
@@ -55,16 +57,22 @@ async def on_mcp(connection: McpConnection, session: mcp.ClientSession):
 @cl.step(name="Checking for Tools", show_input=False)
 async def get_tool_calls_if_appropriate():
     response = await chat_ollama(
-        chat_messages=cl.user_session.get("chat_messages") + [{"role": "user", "content": "Did you mean to call a tool? If so, respond by calling it and with nothing else. Otherwise, respond with \"No.\""}],
+        chat_messages=cl.user_session.get("chat_messages")
+        + [
+            {
+                "role": "user",
+                "content": 'Did you mean to call a tool? If so, respond by calling it and with nothing else. Otherwise, respond with "No."',
+            }
+        ],
         think=False,
         silent=True,
-        )
+    )
     await cl.context.current_step.remove()
     if response.message.tool_calls:
         return response.message.tool_calls
     else:
         return None
-    
+
 
 @cl.step(type="tool")
 async def call_tool(tool_use: ollama.Message.ToolCall):
@@ -98,24 +106,24 @@ async def call_tool(tool_use: ollama.Message.ToolCall):
         return current_step.output
 
     try:
-        current_step.output = (
-            await mcp_session.call_tool(tool_name, tool_input)
-        )
+        current_step.output = await mcp_session.call_tool(tool_name, tool_input)
     except Exception as e:
         current_step.output = json.dumps({"error": str(e)})
 
     return current_step.output
 
 
-
-async def chat_ollama(chat_messages, think = None, silent = False):
+async def chat_ollama(chat_messages, think=None, silent=False):
     msg = cl.Message(content="")
     mcp_tools = cl.user_session.get("mcp_tools")
     tools = flatten([tools for _, tools in mcp_tools.items()])
 
     stream = await client.chat(
-        messages=chat_messages, tools=tools, model=OLLAMA_MODEL, stream=True,
-        think=think
+        messages=chat_messages,
+        tools=tools,
+        model=OLLAMA_MODEL,
+        stream=True,
+        think=think,
     )
 
     final_chunk = None
@@ -161,15 +169,19 @@ async def on_message(msg: cl.Message):
 
         chat_messages.append({"role": "assistant", "content": response.message.content})
 
-        tool_calls = response.message.tool_calls or await get_tool_calls_if_appropriate()
+        tool_calls = (
+            response.message.tool_calls or await get_tool_calls_if_appropriate()
+        )
 
         if tool_calls:
             tool_call = next(iter(tool_calls))
             tool_result = await call_tool(tool_call)
-            chat_messages.append({
-                "role": "tool",
-                "name": tool_call.function.name,
-                "content": f"{tool_result}",
-            })
+            chat_messages.append(
+                {
+                    "role": "tool",
+                    "name": tool_call.function.name,
+                    "content": f"{tool_result}",
+                }
+            )
         else:
             break

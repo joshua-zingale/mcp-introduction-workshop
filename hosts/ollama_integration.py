@@ -1,6 +1,6 @@
-"""A chainlit client application that uses Ollama to converse.
+"""A chainlit host application that uses Ollama to converse.
 
-To run this client, use `chainlit run path/to/this/app.py`.
+To run this host, use `chainlit run path/to/this/app.py`.
 Ollama must be running and you must have "qwen3:1.7b" installed.
 
 Typing "/list" as your prompt will result in all available Ollama models being output.

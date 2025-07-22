@@ -1,6 +1,6 @@
-"""A slightly souped-up hello-world chainlit client application.
+"""A slightly souped-up hello-world chainlit host application.
 
-To run this client, use `chainlit run path/to/this/app.py`.
+To run this host, use `chainlit run path/to/this/app.py`.
 """
 
 import chainlit as cl
