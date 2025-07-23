@@ -114,6 +114,7 @@ async def call_tool(tool_use: ollama.Message.ToolCall):
 
     return str(tool_result.structuredContent)
 
+
 @cl.step(name="Generating Response")
 async def chat_ollama(chat_messages, think=True, silent=False):
     msg = cl.Message(content="")
@@ -127,7 +128,7 @@ async def chat_ollama(chat_messages, think=True, silent=False):
         stream=True,
         think=None if think else False,
     )
-    
+
     if think:
         with cl.Step(name="Thinking") as step:
             async for chunk in stream:
@@ -192,10 +193,7 @@ async def on_message(msg: cl.Message):
             tool_call = next(iter(tool_calls))
             tool_result = await call_tool(tool_call)
             chat_messages.append(
-                {
-                    "role": "tool_use",
-                    "content": tool_call.model_dump_json()
-                }
+                {"role": "tool_use", "content": tool_call.model_dump_json()}
             )
             chat_messages.append(
                 {

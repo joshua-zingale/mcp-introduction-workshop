@@ -9,6 +9,7 @@ from typing import (
 
 mcp = FastMCP("Python Interpreter")
 
+
 @mcp.tool()
 def execute_code(python_source: str) -> str:
     """Call this to execute Python source code and get back the standard output.
@@ -27,7 +28,7 @@ def execute_code(python_source: str) -> str:
     exec_locals = dict()
     with redirect_stdout(output_string):
         exec(python_source, globals=exec_globals, locals=exec_locals)
-    
+
     output_string = output_string.getvalue()
     if len(output_string) == 0:
         raise ValueError("No output. Hint: Did you forget to use a print statement?")
@@ -48,14 +49,17 @@ def raise_if_unsafe_code(python_source: str):
 
 
 def safe_import(
-        name: str,
-        globals: Mapping[str, object] | None = None,
-        locals: Mapping[str, object] | None = None,
-        fromlist: Sequence[str] = (),
-        level: int = 0):
+    name: str,
+    globals: Mapping[str, object] | None = None,
+    locals: Mapping[str, object] | None = None,
+    fromlist: Sequence[str] = (),
+    level: int = 0,
+):
     allowable_imports = ["math", "datetime", "requests"]
     if name not in allowable_imports:
-        raise ImportError(f"{name} is not a valid import module. Must be one of {allowable_imports}.")
+        raise ImportError(
+            f"{name} is not a valid import module. Must be one of {allowable_imports}."
+        )
     module = __import__(name, globals, locals, fromlist, level)
     globals[name] = module
     return module
@@ -64,13 +68,16 @@ def safe_import(
 builtins = dir(__builtins__)
 
 safe_builtins = {
-    builtin: getattr(__builtins__, builtin) for builtin in dir(__builtins__) if builtin not in ["open"]
+    builtin: getattr(__builtins__, builtin)
+    for builtin in dir(__builtins__)
+    if builtin not in ["open"]
 }
 
 safe_builtins["__import__"] = safe_import
 import math
 import datetime
 import requests
-safe_builtins['math'] = math
-safe_builtins['datetime'] = datetime
-safe_builtins['requests'] = requests
+
+safe_builtins["math"] = math
+safe_builtins["datetime"] = datetime
+safe_builtins["requests"] = requests

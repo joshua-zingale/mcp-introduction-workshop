@@ -1,8 +1,8 @@
 from mcp.server.fastmcp import FastMCP
 
 
-
 mcp = FastMCP("Poetry")
+
 
 @mcp.tool()
 def write_poem(topic: str) -> str:
@@ -13,5 +13,5 @@ def write_poem(topic: str) -> str:
 
     Returns:
         str: The poem.
-    """    
+    """
     return f"I love {topic},\n{topic} may love me\nBut well do I know that never shall {topic} forsake {topic}."
