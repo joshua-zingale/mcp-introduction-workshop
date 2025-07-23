@@ -13,3 +13,4 @@ wheels/
 .files/
 
 .env
+servers/weather.py
