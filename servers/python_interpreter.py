@@ -35,19 +35,6 @@ def execute_code(python_source: str) -> str:
     return output_string
 
 
-def raise_if_unsafe_code(python_source: str):
-    """Raises an error if the Python source is not safe to execute.
-
-    Args:
-        python_source (str): The Python source code to be checked.
-
-    Raises:
-        ValueError: If "open" is present in the source code.
-    """
-    if "open" in python_source:
-        raise ValueError("Cannot use `open`")
-
-
 def safe_import(
     name: str,
     globals: Mapping[str, object] | None = None,
