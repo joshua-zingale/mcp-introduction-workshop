@@ -172,7 +172,7 @@ async def chat_start():
 @cl.on_message
 async def on_message(msg: cl.Message):
     if msg.content == "/source":
-        await cl.Message(f"```python\n{SOURCE_CODE}\n").send()
+        await cl.Message(f"```python\n{SOURCE_CODE}\n```").send()
         return
 
     chat_messages = cl.user_session.get("chat_messages")

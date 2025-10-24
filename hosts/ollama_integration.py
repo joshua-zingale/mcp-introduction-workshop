@@ -27,7 +27,7 @@ async def chat_start():
 @cl.on_message
 async def on_message(msg: cl.Message):
     if msg.content == "/source":
-        response = f"```python\n{SOURCE_CODE}\n"
+        response = f"```python\n{SOURCE_CODE}\n```"
     elif msg.content == "/list":
         models = (await client.list()).get("models")
         model_list = "\n".join(map(lambda x: f"- {x.model}", models))
