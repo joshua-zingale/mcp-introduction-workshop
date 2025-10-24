@@ -13,7 +13,7 @@ mcp = FastMCP("Python Interpreter")
 @mcp.tool()
 def execute_code(python_source: str) -> str:
     """Call this to execute Python source code and get back the standard output.
-    Only math, datetime, and requests are available for import.
+    Only math, datetime, string, requests, and random are available for import.
 
     Args:
         python_source: The Python source code to be executed.
@@ -42,7 +42,7 @@ def safe_import(
     fromlist: Sequence[str] = (),
     level: int = 0,
 ):
-    allowable_imports = ["math", "datetime", "requests"]
+    allowable_imports = ["math", "datetime", "string", "requests", "random"]
     if name not in allowable_imports:
         raise ImportError(
             f"{name} is not a valid import module. Must be one of {allowable_imports}."
@@ -64,7 +64,11 @@ safe_builtins["__import__"] = safe_import
 import math
 import datetime
 import requests
+import random
+import string
 
 safe_builtins["math"] = math
 safe_builtins["datetime"] = datetime
 safe_builtins["requests"] = requests
+safe_builtins["random"] = random
+safe_builtins["string"] = string
